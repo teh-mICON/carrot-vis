@@ -139,7 +139,7 @@ export default Vue.extend({
 			activeExamples: "mirror",
 			goestimes:
 				localStorage.getItem("goestimes") === null
-					? 1000000
+					? 1000
 					: localStorage.getItem("goestimes"),
 			cutoff:
 				localStorage.getItem("cutoff") === null
@@ -147,7 +147,7 @@ export default Vue.extend({
 					: localStorage.getItem("cutoff"),
 			updateInterval:
 				localStorage.getItem("updateInterval") === null
-					? 1000
+					? 100
 					: localStorage.getItem("updateInterval"),
 			learningRate:
 				localStorage.getItem("learningRate") === null
@@ -172,6 +172,9 @@ export default Vue.extend({
 		let examples = localStorage.getItem("activeExamples");
 		if (examples === null) {
 			examples = "XOR";
+      this.setExamples(examples);
+      this.save();
+      this.load();
 		}
     this.setExamples(examples);
 		this.load();
@@ -302,7 +305,6 @@ export default Vue.extend({
 		load() {
 			console.log("LOADING");
       const loaded = JSON.parse(window.localStorage.getItem("genome"));
-      
 			const population = _.map(loaded, network => {
 				return Network.fromJSON(network);
       });

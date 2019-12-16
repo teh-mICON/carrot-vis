@@ -148,23 +148,22 @@ export default Vue.extend({
     },
 
 		async graph3d(element, network, vue) {
-      return;
 			const max = _.maxBy(network.connections, connection => connection.weight)
 				.weight;
 			const min = _.minBy(network.connections, connection => connection.weight)
 				.weight;
 
 			const gData = {
-				nodes: _.map(network.getNodes(), node => ({
-					id: node.getId(),
-					type: node.getType()
+				nodes: _.map(network.nodes, node => ({
+					id: node.index,
+					type: node.type
 				})),
 				links: _.map(network.connections, connection => {
 					const normalized = normalize(min, max, connection.weight);
           const width = denormalize(1, 3, normalized);
 					return {
-						source: connection.from,
-            target: connection.to,
+						source: connection.from.index,
+            target: connection.to.index,
             weight: connection.weight,
 						width
 					};

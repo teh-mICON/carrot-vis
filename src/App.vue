@@ -132,7 +132,9 @@ const config = {
 		}
 	},
 	workers: {
-		mirror: {},
+		mirror: {
+      architecture: [3, 7, 5, 4, 3]
+    },
 		X2: {},
 		AND: {},
 		OR: {},
@@ -152,10 +154,9 @@ const wrap = (name, default_) => {
 		localStorage.setItem("vizconfig_" + name, value);
 	};
 };
-_.each(config.inputsLeft, (item, name) => wrap(name, item.value));
-_.each(config.inputsRight, (item, name) => wrap(name, item.value));
-//TODO: set default worker
-wrap("activeWorker", "");
+_.each(config.inputsLeft, (item, name) => wrap(name, item.default));
+_.each(config.inputsRight, (item, name) => wrap(name, item.default));
+wrap("activeWorker", Object.keys(config.workers)[0]);
 
 export default Vue.extend({
 	name: "app",
@@ -218,14 +219,16 @@ export default Vue.extend({
 						if (message.data.event == "update") {
 							this.elapsedTime =
 								(new Date().getTime() - this.startTime.getTime()) / 1000;
-							this.updateEpoch(message.data.epoch);
-							this.updateNetwork(Network.fromJSON(message.data.network));
+              this.updateEpoch(message.data.epoch);
+              const network = Network.fromJSON(message.data.network);
+              _.each(message.data.network.nodes, (node, index) => network.nodes[index].activation = node.activation);
+							this.updateNetwork(network);
 							this.updateScore(message.data.score);
 							this.updateResults(message.data.results);
 						}
 					};
 
-					this.worker.postMessage({ event: "initialize" });
+					this.worker.postMessage({ event: "initialize", config: config.workers[name] });
 				}
 			);
 		},

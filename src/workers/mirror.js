@@ -10,9 +10,8 @@ class Handler {
     this.suspend = false;
   }
 
-  initialize() {
-    console.log('INIT')
-    this.network = architect.Perceptron(3, 5, 7, 11, 7, 5, 3);
+  initialize(architecture) {
+    this.network = architect.Perceptron(...architecture);
     this.i = 0;
   }
 
@@ -21,10 +20,14 @@ class Handler {
     this.i += this.updateInterval;
 
     const evaluation = utils.evaluate(this.network, examples);
+    const serialized = this.network.toJSON();
+    _.each(this.network.nodes, (node, index) => {
+      serialized.nodes[index].activation = node.activation;
+    });
     self.postMessage({
       event: 'update',
       epoch: this.i,
-      network: this.network.toJSON(),
+      network: serialized,
       results: evaluation.results,
       score: evaluation.score
     })
@@ -63,7 +66,7 @@ const handler = new Handler;
 self.addEventListener('message', (message) => {
   switch (message.data.event) {
     case 'initialize':
-      handler.initialize();
+      handler.initialize(message.data.config.architecture);
       break;
     case 'goes':
       handler.goes(message.data);

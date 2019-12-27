@@ -78,16 +78,14 @@ export default Vue.extend({
 			_.each(network.nodes, (node, index) => (node.index = index));
 
 			const nodesRaw = _.map(network.nodes, (node, index) => {
-				let color;
-				if (node.type == "input") color = "#dbdd60";
-				if (node.type == "hidden") color = "#92b6ce";
-				if (node.type == "output") color = "#ffffff";
+        let border;
+				if (node.type == 'input') border = "#dbdd60";
+				if (node.type == 'hidden') border = "#92b6ce";
+				if (node.type == 'output') border = "#ffffff";
 
-				const dec = denormalize(0, 1, node.activation);
-				const hex = Converter.decToHex("" + dec, { prefix: false });
-				color = Color(color)
-					.darken(dec)
-					.hex();
+        const dec = denormalize(0, 255, node.activation);
+        const hex = Converter.decToHex("" + Math.round(dec), { prefix: false });
+        const color = "#" + hex + hex + hex;
 				const connectionMapper = connection => {
 					return {
 						from: connection.from.index,
@@ -101,7 +99,7 @@ export default Vue.extend({
 					label: "" + node.index,
 					color: {
 						background: color,
-						border: "#333",
+						border,
 						highlight: "red"
 					},
 					custom: {

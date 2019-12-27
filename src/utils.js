@@ -5,18 +5,27 @@ function normalize(low, high, value) {
 function denormalize(low, high, value) {
   return +low + value * (high - low);
 }
-
+function evaluate(network, examples) {
+  let score = 0;
+  const results = [];
+  _.each(examples, example => {
+    const actual = network.activate(example.input);
+    _.each(example.output, (output, index) => {
+      results.push({ input: example.input, output: example.output, actual })
+      score += Math.pow(output - actual[index], 2);
+    })
+  })
+  return { score: score * .5, results }
+}
 export default {
   normalize,
   denormalize,
+  evaluate,
   examples: {
     mirror: [
       { input: [1, 0, 0], output: [1, 0, 0] },
       { input: [0, 1, 0], output: [0, 1, 0] },
       { input: [0, 0, 1], output: [0, 0, 1] }
-    ],
-    mazur: [
-      { input: [.05, .10], output: [.01, .99] }
     ],
     X2: [
       { input: [normalize(1, 6, 1)], output: [normalize(2, 12, 2)] },

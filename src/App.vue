@@ -1,77 +1,65 @@
 <template>
 	<div :key="frame">
-		<Graph :network="graphNetwork" v-if="graphNetwork" :enable3d="enable3d" />
+		<Graph :network="network" :auto2D="auto2D" :auto3D="auto3D" />
 		<div id="content">
 			<div class="d-flex flex-row flexatron">
 				<div class="controls">
-					<div class="input-group input-group-sm">
-						<div class="input-group-prepend" v-tooltip.right="'Maximum samples to feed the network'">
-							<span class="input-group-text">X</span>
+					<div
+						v-for="(item, index) in config.inputsLeft"
+						:key="'input_left_' + index"
+						class="input-group input-group-sm"
+					>
+						<div class="input-group-prepend" v-tooltip.right="item.tooltip">
+							<span class="input-group-text">{{item.caption}}</span>
 						</div>
-						<input type="text" class="form-control" v-model="goestimes" @change="updateGoestimes" />
-					</div>
-					<div class="input-group input-group-sm">
-						<div class="input-group-prepend" v-tooltip.right="'Minimum error rate before stopping'">
-							<span class="input-group-text">cutoff</span>
-						</div>
-						<input type="text" class="form-control" v-model="cutoff" @change="updateCutoff" />
-					</div>
-					<div class="input-group input-group-sm">
-						<div class="input-group-prepend" v-tooltip.right="'Update vis after epochs'">
-							<span class="input-group-text">update</span>
-						</div>
-						<input
-							type="text"
-							class="form-control"
-							v-model="updateInterval"
-							@change="updateUpdateInterval"
-						/>
+						<input type="text" class="form-control" v-input-model="index" />
 					</div>
 				</div>
 				<div class="controls">
-					<div class="input-group input-group-sm">
-						<div class="input-group-prepend" v-tooltip.left="'Network learning rate'">
-							<span class="input-group-text">learning</span>
+					<div
+						v-for="(item, index) in config.inputsRight"
+						:key="'input_left_' + index"
+						class="input-group input-group-sm"
+					>
+						<div class="input-group-prepend" v-tooltip.left="item.tooltip">
+							<span class="input-group-text">{{item.caption}}</span>
 						</div>
-						<input type="text" class="form-control" v-model="learningRate" @change="updateLearningRate" />
-					</div>
-					<div class="input-group input-group-sm">
-						<div class="input-group-prepend" v-tooltip.left="'Node delta momentum'">
-							<span class="input-group-text">momentum</span>
-						</div>
-						<input type="text" class="form-control" v-model="momentum" @change="updateMomentum" />
+						<input type="text" class="form-control" v-input-model="index" />
 					</div>
 				</div>
 			</div>
 			<div class="d-flex flex-row flexatron">
 				<div class="btn-group" role="group" aria-label="Basic example">
 					<button
-						type="button"
-						:class="btnClass('mirror')"
-						@click="setExamples('mirror'); save();"
-					>mirror</button>
-					<button type="button" :class="btnClass('X2')" @click="setExamples('X2'); save();">X2</button>
-					<button type="button" :class="btnClass('AND')" @click="setExamples('AND'); save();">AND</button>
-					<button type="button" :class="btnClass('OR')" @click="setExamples('OR'); save();">OR</button>
-					<button type="button" :class="btnClass('XOR')" @click="setExamples('XOR'); save();">XOR</button>
-					<button type="button" :class="btnClass('NAND')" @click="setExamples('NAND'); save();">NAND</button>
-					<button type="button" :class="btnClass('NOR')" @click="setExamples('NOR'); save();">NOR</button>
-					<button type="button" :class="btnClass('XNOR')" @click="setExamples('XNOR'); save();">XNOR</button>
+						v-for="(buttonConfig, name) in config.workers"
+						:key="'button_' + name"
+						:class="['btn', workerClass == name ? 'btn_blue_active' : 'btn_blue']"
+						@click="setWorker(name)"
+					>{{name}}</button>
 				</div>
 				<div class="input-group special">
 					<div class="input-group-prepend">
-						<button @click="save(); goesX()" class="btn btn-danger" type="button">GOES</button>
+						<button @click="goes()" class="btn btn_red" type="button">{{goescaption}}</button>
+						<button @click="save()" class="btn btn_green" type="button">SAVE</button>
+						<button @click="load()" class="btn btn_green" type="button">LOAD</button>
 					</div>
-					<button type="button" class="btn btn-primary" @click="stop">STOP</button>
-					<button type="button" class="btn btn-outline-success" @click="save">save</button>
-					<button type="button" class="btn btn-outline-info" @click="load">load</button>
+				</div>
+				<div class="form-group">
+					<div class="custom-control custom-switch">
+						<input type="checkbox" class="custom-control-input" id="autoswitch2d" v-model="auto2D" />
+						<label class="custom-control-label" for="autoswitch2d">auto render 2D</label>
+					</div>
+					<div class="custom-control custom-switch">
+						<input type="checkbox" class="custom-control-input" id="autoswitch3d" v-model="auto3D" />
+						<label class="custom-control-label" for="autoswitch3d">auto render 3D</label>
+					</div>
 				</div>
 			</div>
 			<div class="d-flex flex-row flexatron">
 				<table id="result">
 					<tr v-for="(result, index) in results" :key="index">
 						<td class="input">{{result.input.join(',')}}</td>
-						<td class="ideal">{{result.ideal.join(',')}}</td>
+						<td class="ideal">{{result.output.join(',')}}</td>
 						<td class="actual">{{result.actual.join(' ')}}</td>
 					</tr>
 				</table>
@@ -85,36 +73,89 @@
 						<td>{{epoch}}</td>
 					</tr>
 					<tr>
-						<th>MSE</th>
-						<td>{{MSE}}</td>
+						<th>score</th>
+						<td>{{score}}</td>
 					</tr>
 				</table>
 			</div>
 			<div class="btn-group" role="group"></div>
-			<Errors :errors="errors" v-if="errors" />
+			<Scores :scores="scores" v-if="scores" />
 			<Genome :network="network" v-if="network" />
 		</div>
 	</div>
 </template>
 
-<script lang="ts">
+<script>
 import _ from "lodash";
 
 import Vue from "vue";
 import Graph from "./components/graph.vue";
 import GenomeComponent from "./components/genome.vue";
-import Errors from "./components/errors.vue";
+import Scores from "./components/scores.vue";
 
 import utils from "./utils";
 
-let { Network, Neat, methods } = require("@liquid-carrot/carrot");
+let { Network } = require("@liquid-carrot/carrot");
 
-function normalize(low, high, value) {
-	return (value - low) / (high - low);
-}
-function denormalize(low, high, value) {
-	return +low + value * (high - low);
-}
+Vue.directive("input-model", {
+	bind: function(element, binding, vnode) {
+		element.value = vnode.context[binding.value];
+		element.onchange = () => {
+			vnode.context[binding.value] = element.value;
+		};
+	}
+});
+
+const config = {
+	inputsLeft: {
+		goestimes: {
+			caption: "X",
+			tooltip: "maximum samples to feed the network",
+			default: 100000
+		},
+		cutoff: {
+			caption: "cutoff",
+			tooltip: "the minimum error at which to stop learning",
+			default: 0.001
+		},
+		updateInterval: {
+			caption: "update interval",
+			tooltip: "the amount of learning examples before updating the viz",
+			default: 1000
+		}
+	},
+	inputsRight: {
+		learningRate: {
+			caption: "learning rate",
+			tooltip: "the multiplier applied to weight updates",
+			default: 0.01
+		}
+	},
+	workers: {
+		mirror: {},
+		X2: {},
+		AND: {},
+		OR: {},
+		XOR: {},
+		NAND: {},
+		NOR: {},
+		XNOR: {}
+	}
+};
+
+// reactive local storage wrapper
+const dataItems = {};
+const watchItems = {};
+const wrap = (name, default_) => {
+	dataItems[name] = localStorage.getItem("vizconfig_" + name) || default_;
+	watchItems[name] = value => {
+		localStorage.setItem("vizconfig_" + name, value);
+	};
+};
+_.each(config.inputsLeft, (item, name) => wrap(name, item.value));
+_.each(config.inputsRight, (item, name) => wrap(name, item.value));
+//TODO: set default worker
+wrap("activeWorker", "");
 
 export default Vue.extend({
 	name: "app",
@@ -122,196 +163,156 @@ export default Vue.extend({
 	components: {
 		Graph,
 		Genome: GenomeComponent,
-		Errors
+		Scores
 	},
 
 	data() {
 		return {
-			population: [],
-			network: null,
-			neat: null,
-			graphNetwork: null,
-			normalize: false,
-			examples: utils.examples.XOR,
-			genome: null,
 			results: [],
+			scores: [],
+			network: null,
+			genome: null,
+			worker: null,
 			frame: 0,
-			activeExamples: "mirror",
-			goestimes:
-				localStorage.getItem("goestimes") === null
-					? 1000
-					: localStorage.getItem("goestimes"),
-			cutoff:
-				localStorage.getItem("cutoff") === null
-					? 0.001
-					: localStorage.getItem("cutoff"),
-			updateInterval:
-				localStorage.getItem("updateInterval") === null
-					? 100
-					: localStorage.getItem("updateInterval"),
-			learningRate:
-				localStorage.getItem("learningRate") === null
-					? 0.001
-					: localStorage.getItem("learningRate"),
-			momentum:
-				localStorage.getItem("momentum") === null
-					? 0.5
-					: localStorage.getItem("momentum"),
-			MSE: 0,
-			errors: [],
+			score: 0,
 			epoch: 0,
-			runFunc: null,
-			timeout: null,
 			startTime: new Date(),
-			elapsedTime: null,
-			enable3d: true
+			elapsedTime: 0,
+			auto2D: true,
+			auto3D: false,
+			status: "idle",
+			goescaption: "goes",
+			config,
+			workerClass: null, // for button class reactivity
+			...dataItems
 		};
 	},
+	watch: watchItems,
 	async created() {
-		document.title = "liquid carrot vis";
-		let examples = localStorage.getItem("activeExamples");
-		if (examples === null) {
-			examples = "XOR";
-      this.setExamples(examples);
-      this.save();
-      this.load();
-		}
-    this.setExamples(examples);
-		this.load();
+		document.title = "nn-viz";
+
+		if (this.activeWorker === null) this.setWorker("mirror");
+		else this.setWorker(this.activeWorker);
 	},
 	methods: {
-		pause() {
-			window.clearTimeout(this.timeout);
+    reset() {
+			this.status = "idle";
+      this.goescaption = "goes";
+      this.score = 0;
+      this.scores = [];
+
+    },
+
+		setWorker(name) {
+			if (this.worker) {
+				this.worker.terminate();
+      }
+      this.reset();
+
+			this.activeWorker = name;
+			this.workerClass = name;
+			const path = import("worker-loader!./workers/" + name + ".js").then(
+				worker => {
+					this.worker = worker.default();
+					this.worker.onmessage = message => {
+						if (message.data.event == "update") {
+							this.elapsedTime =
+								(new Date().getTime() - this.startTime.getTime()) / 1000;
+							this.updateEpoch(message.data.epoch);
+							this.updateNetwork(Network.fromJSON(message.data.network));
+							this.updateScore(message.data.score);
+							this.updateResults(message.data.results);
+						}
+					};
+
+					this.worker.postMessage({ event: "initialize" });
+				}
+			);
 		},
-		resume() {
-			window.setTimeout(this.runFunc, 1);
+
+		updateNetwork(network) {
+			this.network = network;
 		},
-		stop() {
-			window.clearTimeout(this.timeout);
-			this.errors = [];
-			this.enable3d = true;
-		},
-		setExamples(index) {
-			localStorage.setItem("activeExamples", index);
-
-			this.normalize = false;
-			if (index == "X2") {
-				this.normalize = true;
-			}
-			this.errors = [];
-
-			const config = {
-				learningRate: this.learningRate,
-				momentum: this.momentum
-			};
-			this.examples = utils.examples[index];
-
-			if (index == "mirror") {
-				this.neat = new Neat(3, 3);
-			} else {
-				this.neat = new Neat(2, 1);
-			}
-		},
-
-		updateDisplay(epoch) {
-			const results = [];
-			let MSE = 0;
-			_.each(this.examples, example => {
-				// activate network
-				const actual = this.network.activate(example.input);
-
-				// add every error to the MSE
-				_.each(example.output, (ideal, index) => {
-					MSE += Math.pow(actual[index] - ideal, 2);
-				});
-
-				// add result to display
-				results.push({
-					input: example.input,
-					ideal: example.output,
-					actual: _.map(actual, output => utils.toDecimaNum(output, 10))
-				});
-			});
-
-			// finally set all display properties
-			this.MSE = MSE * 0.5;
-			this.graphNetwork = this.network;
-			this.results = results;
-			this.errors.push(this.MSE);
-			if (this.errors.length > 100) this.errors.splice(0, 1);
-			this.frame++;
+		updateEpoch(epoch) {
 			this.epoch = epoch;
-			this.elapsedTime =
-				(new Date().getTime() - this.startTime.getTime()) / 1000;
+		},
+		updateScore(score) {
+			this.score = score;
+			this.scores.push(score);
+		},
+		updateResults(results) {
+			this.results = results;
 		},
 
-		goesX() {
-			let i = 0;
-			this.startTime = new Date();
-			this.enable3d = false;
-
-			const goes = async () => {
-				for (let j = 0; j < this.updateInterval; j++) {
-					this.neat.evolve(this.examples);
-				}
-				i += parseInt(this.updateInterval);
-				this.network = this.neat.getFittest(this.examples);
-				this.updateDisplay(i);
-
-				if (this.MSE > this.cutoff && i < this.goestimes) {
-					this.timeout = window.setTimeout(goes, 10);
-				} else {
-					this.timeout = false;
-					this.enable3d = true;
-					this.runFunc = null;
-				}
-			};
-			this.timeout = window.setTimeout(goes, 0);
-			this.runFunc = goes;
+		updateDisplay(epoch, network, score) {
+			this.epoch = epoch;
+			this.MSE = score;
+			this.network = network;
+			this.scores.push(score);
+			//this.results = results.results;
+			if (this.scores.length > 100) this.scores.splice(0, 1);
+			this.frame++;
 		},
 
-		btnClass(examples) {
-			if (examples == localStorage.getItem("activeExamples"))
-				return "btn btn-info";
+		goes() {
+			switch (this.status) {
+				case "idle":
+					this.status = "running";
+					this.goescaption = "pause";
+					this.worker.postMessage({
+						event: "goes",
+						goestimes: this.goestimes,
+            updateInterval: this.updateInterval,
+            learningRate: this.learningRate,
+            cutoff: this.cutoff
+					});
+					this.startTime = new Date();
+					break;
+				case "running":
+					this.worker.postMessage({
+						event: "pause"
+					});
+					this.status = "paused";
+					this.goescaption = "resume";
+					break;
+				case "paused":
+					this.status = "running";
+					this.goescaption = "pause";
+					this.worker.postMessage({
+						event: "resume"
+					});
+					break;
+			}
+		},
+
+		buttonClass(name) {
+			if (name == this.activeWorker) return "btn btn-info";
 			return "btn btn-secondary";
 		},
-		updateGoestimes() {
-			window.localStorage.setItem("goestimes", this.goestimes);
-			location.reload();
-		},
-		updateCutoff() {
-			window.localStorage.setItem("cutoff", this.cutoff);
-			location.reload();
-		},
-		updateUpdateInterval() {
-			window.localStorage.setItem("updateInterval", this.updateInterval);
-			location.reload();
-		},
-		updateLearningRate() {
-			window.localStorage.setItem("learningRate", this.learningRate);
-			location.reload();
-		},
-		updateMomentum() {
-			window.localStorage.setItem("momentum", this.momentum);
-			location.reload();
-		},
 		save() {
-			console.log("SAVING");
-			const population = _.map(this.neat.population, network =>
-				network.toJSON()
-      );
-			window.localStorage.setItem("genome", JSON.stringify(population));
+			if (!this.network)
+				return this.$toasted.show("no network to save", {
+					type: "error",
+					duration: 3000
+				});
+
+			localStorage.network = JSON.stringify(this.network.toJSON());
 		},
 		load() {
-			console.log("LOADING");
-      const loaded = JSON.parse(window.localStorage.getItem("genome"));
-			const population = _.map(loaded, network => {
-				return Network.fromJSON(network);
-      });
-      this.neat = new Neat(this.examples)
-			this.neat.population = population;
-      this.network = this.neat.getFittest(this.examples);
-      this.updateDisplay(0);
+			if (!localStorage.getItem("network"))
+				return this.$toasted.show("no saved network", {
+					type: "error",
+					duration: 3000
+        });
+			this.worker.postMessage({
+				event: "load",
+				network: JSON.parse(localStorage.network)
+			});
+		}
+	},
+	beforeDestroy() {
+		if (this.worker) {
+			this.worker.terminate();
 		}
 	}
 });
@@ -367,7 +368,7 @@ html .btn-secondary {
 	color: white;
 }
 html .input-group-text {
-	width: 100px;
+	width: 150px;
 	background-color: black;
 	color: white;
 	border-right: 1px solid white;
@@ -428,5 +429,26 @@ html .input-group-text {
 		opacity: 1;
 		transition: opacity 0.15s;
 	}
+}
+
+html .btn_green {
+  background-color: #506e50;
+  color: white;
+}
+html .btn_blue {
+  background-color: #505e6e;
+  color: white;
+}
+html .btn_blue_active {
+  background-color: lighten(#505e6e, 20%);
+  color: white;
+}
+html .btn_red {
+  background-color: #6e5050;
+  color: white;
+}
+html .btn_outline_green {
+  border: 2px solid #506e50;
+  color: white;
 }
 </style>

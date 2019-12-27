@@ -1,7 +1,5 @@
 <template>
 	<div>
-		<!--<trend :data="chart" :gradient="gradient" smooth />-->
-		<!--<TrendChart :datasets="datasets" :labels="labels" />-->
 		<TrendChart
 			:datasets="datasets"
 			:grid="{
@@ -9,7 +7,7 @@
      horizontalLines: true
   }"
 			:min="0"
-			v-if="this.errors.length > 1"
+			v-if="this.scores.length > 1"
 			:labels="labels"
 			id="trend"
 		></TrendChart>
@@ -22,14 +20,14 @@ import _ from "lodash";
 import utils from "../utils";
 
 export default Vue.extend({
-	name: "errors",
+	name: "scores",
 
-	props: ["errors"],
+	props: ["scores"],
 	data() {
 		return {
-			chart: this.errors,
+			chart: this.scores,
 			gradient: ["#F00", "#0F0"],
-			datasets: [{ data: this.errors, fill: true, className: "error_chart" }],
+			datasets: [{ data: this.scores, fill: true, className: "score_chart" }],
 			labels: {
 				yLabels: 5,
 				yLabelsTextFormatter: val => utils.toDecimaNum(val)

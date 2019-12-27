@@ -1,7 +1,9 @@
 <template>
 	<div>
-		<div ref="graph2d" id="graph2d"></div>
-		<div ref="graph3d" id="graph3d"></div>
+		<div ref="graph2D" id="graph2D" class="graph_hide"></div>
+		<button @click="graph2D" class="btn btn_green btn-sm">render 2D</button>
+		<div ref="graph3D" id="graph3D" class="graph_hide"></div>
+		<button @click="graph3D" class="btn btn_green btn-sm">render 3D</button>
 		<pre v-html="clickedNode" class="json_small"></pre>
 		<pre v-html="clickedEdge" class="json_small"></pre>
 	</div>
@@ -15,14 +17,14 @@ import _ from "lodash";
 import beautify from "json-beautify";
 import format from "json-format-highlight";
 import Converter from "hex2dec";
-import Color from 'color'
+import Color from "color";
 
 import utils from "../utils";
 
 const NETVIS_COLORS = {
-  input: '#4b8c48',
-  hidden: '#48688c',
-  action: '#b80f0f'
+	input: "#4b8c48",
+	hidden: "#48688c",
+	action: "#b80f0f"
 };
 
 function normalize(low, high, value) {
@@ -35,47 +37,78 @@ function denormalize(low, high, value) {
 export default Vue.extend({
 	name: "vis",
 
-	props: ["network", "enable3d"],
+	props: ["network", "auto2D", "auto3D"],
 	data() {
-		return { clickedEdge: null, clickedNode: null };
+		return {
+			enabled2D: false,
+			enabled3D: false,
+			clickedEdge: null,
+			clickedNode: null
+		};
 	},
 
 	mounted() {
-		this.graph(this.$refs["graph2d"], this.network, this);
-    if(this.enable3d)
-      this.graph3d(this.$refs["graph3d"], this.network, this);
+		this.render();
+	},
+
+	watch: {
+		network() {
+			this.render();
+		}
 	},
 
 	methods: {
-		graph: async (element, network, vue) => {
+		render() {
+			if (this.auto2D) this.graph2D();
+			if (this.auto3D) this.graph3D();
+		},
+		graph2D() {
+			if (!this.network) return;
+			this.enabled2D = true;
+			this.render2D(this.$refs["graph2D"], this.network, this);
+		},
+		graph3D() {
+			if (!this.network) return;
+			this.enabled3D = true;
+			this.render3D(this.$refs["graph3D"], this.network, this);
+		},
+		render2D: async (element, network, vue) => {
+			element.classList.remove("graph_hide");
+			element.classList.add("graph_show");
+			_.each(network.nodes, (node, index) => (node.index = index));
+
 			const nodesRaw = _.map(network.nodes, (node, index) => {
-        node.index = index;
-        let color;
-				if (node.type == 'input') color = "#dbdd60";
-				if (node.type == 'hidden') color = "#92b6ce";
-				if (node.type == 'output') color = "#ffffff";
+				let color;
+				if (node.type == "input") color = "#dbdd60";
+				if (node.type == "hidden") color = "#92b6ce";
+				if (node.type == "output") color = "#ffffff";
 
 				const dec = denormalize(0, 1, node.activation);
-        const hex = Converter.decToHex("" + dec, { prefix: false });
-        color = Color(color).darken(dec).hex()
+				const hex = Converter.decToHex("" + dec, { prefix: false });
+				color = Color(color)
+					.darken(dec)
+					.hex();
 				const connectionMapper = connection => {
 					return {
 						from: connection.from.index,
 						to: connection.to.index,
 						weight: connection.weight
 					};
-        };
+				};
 				return {
-					id: "" + node.index,
+					id: node.index,
 					title: "" + node.index,
 					label: "" + node.index,
-          color: {
-            background: color, highlight: 'red'
-          },
+					color: {
+						background: color,
+						border: "#333",
+						highlight: "red"
+					},
 					custom: {
 						id: node.index,
-            output: node.activation,
-            bias: node.bias,
+						type: node.type,
+						output: node.activation,
+						bias: node.bias,
 						connections: _.map(network.connections, connectionMapper)
 					}
 				};
@@ -88,7 +121,7 @@ export default Vue.extend({
 				.weight;
 			const edgesRaw = network.connections.map(connection => {
 				const normalized = normalize(min, max, connection.weight);
-        const width = denormalize(1, 10, normalized);
+				const width = denormalize(1, 10, normalized);
 				return {
 					from: connection.from.index,
 					to: connection.to.index,
@@ -98,9 +131,7 @@ export default Vue.extend({
 					custom: { connection }
 				};
 			});
-			const edges = new vis.DataSet(
-				_.remove(edgesRaw, edge => edge !== null)
-			);
+			const edges = new vis.DataSet(_.remove(edgesRaw, edge => edge !== null));
 
 			const options = {
 				autoResize: true,
@@ -130,10 +161,8 @@ export default Vue.extend({
 				const edgeIds = properties.edges;
 				const edge = edges.get(edgeIds)[0];
 
-				if (node && node.custom ) {
-					vue.clickedNode = format(
-						beautify(node.custom, null, 2, 100)
-					);
+				if (node && node.custom) {
+					vue.clickedNode = format(beautify(node.custom, null, 2, 100));
 				} else {
 					vue.clickedNode = "";
 				}
@@ -145,9 +174,11 @@ export default Vue.extend({
 					vue.clickedEdge = "";
 				}
 			});
-    },
+		},
 
-		async graph3d(element, network, vue) {
+		async render3D(element, network, vue) {
+			element.classList.remove("graph_hide");
+			element.classList.add("graph_show");
 			const max = _.maxBy(network.connections, connection => connection.weight)
 				.weight;
 			const min = _.minBy(network.connections, connection => connection.weight)
@@ -160,11 +191,11 @@ export default Vue.extend({
 				})),
 				links: _.map(network.connections, connection => {
 					const normalized = normalize(min, max, connection.weight);
-          const width = denormalize(1, 3, normalized);
+					const width = denormalize(1, 3, normalized);
 					return {
 						source: connection.from.index,
-            target: connection.to.index,
-            weight: connection.weight,
+						target: connection.to.index,
+						weight: connection.weight,
 						width
 					};
 				})
@@ -173,10 +204,10 @@ export default Vue.extend({
 				.graphData(gData)
 				.linkDirectionalArrowLength(3.5)
 				.linkDirectionalArrowRelPos(1)
-        .linkCurvature(0.25)
-        .linkColor(link => {
-          return link.weight > 0 ? 'green' : 'red'
-        })
+				.linkCurvature(0.25)
+				.linkColor(link => {
+					return link.weight > 0 ? "green" : "red";
+				})
 				.nodeColor(node => {
 					if (node.type == "input") return NETVIS_COLORS.input;
 					if (node.type == "hidden") return NETVIS_COLORS.hidden;
@@ -184,9 +215,9 @@ export default Vue.extend({
 					return "#ff0000";
 				})
 				.linkWidth(node => node.width)
-        .height(500)
-        .backgroundColor('black') ;
-		}    
+				.height(500)
+				.backgroundColor("black");
+		}
 	}
 });
 </script>
@@ -196,11 +227,16 @@ export default Vue.extend({
 	font-size: 14px;
 	background-color: #111;
 }
-#graph2d {
-  background-color: black;
+#graph2D {
+	background-color: black;
 }
-#graph3d {
+#graph3D {
 	height: 500px;
 }
-
+.graph_show {
+	display: block;
+}
+.graph_hide {
+	display: none;
+}
 </style>

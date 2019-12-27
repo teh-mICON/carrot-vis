@@ -28,14 +28,14 @@ export default Vue.extend({
 	},
 
 	mounted() {
-    const genome = {connections: [], biases: {} }
+    const genome = {connections: [], nodes: {} }
 
     _.each(this.network.connections, connection => {
       genome.connections.push({ from: connection.from.index, to: connection.to.index, weight: utils.toDecimaNum(connection.weight, 8) })
     })
 
     _.each(this.network.nodes, (node, id) => {
-      genome.biases[id] = utils.toDecimaNum(node.bias, 8);
+      genome.nodes[id] = { type: node.type, bias: utils.toDecimaNum(node.bias, 8) };
     })
 
 		this.json = format(beautify(genome, null, 2, 100));

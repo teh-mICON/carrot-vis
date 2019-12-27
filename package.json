@@ -24,6 +24,7 @@
     "v-tooltip": "^2.0.2",
     "vis-network": "^6.0.0",
     "vue": "^2.6.10",
+    "vue-toasted": "^1.1.27",
     "vue-trend-chart": "^0.15.1"
   },
   "devDependencies": {
@@ -31,6 +32,7 @@
     "@vue/cli-service": "^4.1.0",
     "node-sass": "^4.12.0",
     "sass-loader": "^8.0.0",
-    "vue-template-compiler": "^2.6.10"
+    "vue-template-compiler": "^2.6.10",
+    "worker-loader": "^2.0.0"
   }
 }

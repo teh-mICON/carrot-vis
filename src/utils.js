@@ -28,12 +28,11 @@ export default {
       { input: [0, 0, 1], output: [0, 0, 1] }
     ],
     X2: [
-      { input: [normalize(1, 6, 1)], output: [normalize(2, 12, 2)] },
-      { input: [normalize(1, 6, 2)], output: [normalize(2, 12, 4)] },
-      { input: [normalize(1, 6, 3)], output: [normalize(2, 12, 6)] },
-      { input: [normalize(1, 6, 4)], output: [normalize(2, 12, 8)] },
-      { input: [normalize(1, 6, 5)], output: [normalize(2, 12, 10)] },
-      { input: [normalize(1, 6, 6)], output: [normalize(2, 12, 12)] }
+      { input: [.1], output: [.2] },
+      { input: [.2], output: [.4] },
+      { input: [.3], output: [.6] },
+      { input: [.4], output: [.8] },
+      { input: [.5], output: [1] },
     ],
     AND: [
       { input: [0, 0], output: [0] },

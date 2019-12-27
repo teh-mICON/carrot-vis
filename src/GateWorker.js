@@ -37,10 +37,14 @@ class GateWorker {
     this.i += this.updateInterval;
 
     const evaluation = utils.evaluate(this.network, this.examples);
+    const serialized = this.network.toJSON();
+    _.each(this.network.nodes, (node, index) => {
+      serialized.nodes[index].activation = node.activation;
+    });
     self.postMessage({
       event: 'update',
       epoch: this.i,
-      network: this.network.toJSON(),
+      network: serialized,
       results: evaluation.results,
       score: trainingResults.error
     })
